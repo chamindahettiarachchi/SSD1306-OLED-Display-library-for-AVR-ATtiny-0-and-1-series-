@@ -31,3 +31,5 @@ void ssd1306_write_u16(uint16_t v);
 void ssd1306_write_s16(int16_t v);
 void ssd1306_write_hex8(uint8_t v);
 void ssd1306_write_fixed2(int16_t v_x100);
+void ssd1306_write_int(int value);
+void ssd1306_write_column(uint8_t page, uint8_t col, uint8_t pattern);
