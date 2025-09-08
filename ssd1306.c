@@ -2,7 +2,7 @@
 #ifndef F_CPU
 #define F_CPU 3333333UL
 #endif
-
+#include <stdio.h>
 #include "ssd1306.h"
 #include "ssd1306_hal.h"
 #include <avr/pgmspace.h>
@@ -228,4 +228,20 @@ void ssd1306_write_fixed2(int16_t v_x100){
     ssd1306_write_char('.');
     ssd1306_write_char((char)('0' + d/10));
     ssd1306_write_char((char)('0' + d%10));
+}
+void ssd1306_write_int(int value) {
+    char buf[12];        // enough for signed 32-bit
+    sprintf(buf, "%d", value);
+    ssd1306_write_string(buf);
+}
+void ssd1306_write_column(uint8_t page, uint8_t col, uint8_t pattern)
+{
+    // set page + column (page addressing)
+    uint8_t cmds[3] = {
+        (uint8_t)(0xB0 | (page & 7)),
+        (uint8_t)(0x00 | (col & 0x0F)),
+        (uint8_t)(0x10 | ((col >> 4) & 0x0F))
+    };
+    ssd1306_hal_write_cmds(cmds, 3);
+    ssd1306_hal_write_data(&pattern, 1);  // write one column
 }
