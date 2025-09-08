@@ -1,75 +1,70 @@
+// main.c  (SSD1306_BUFFERED must be 0)
 #define F_CPU 3333333UL
 #include <util/delay.h>
 #include <avr/io.h>
-
-#include "twi0_bare.h"
 #include "ssd1306.h"
 #include "ssd1306_hal.h"
-int kroll = 725;
+
+// (from your Solution B)
+
 int main(void)
 {
-    if (!ssd1306_begin()) while (1) { }   // init I2C + OLED
-// Unsigned integer
-ssd1306_set_cursor(0,0);
-ssd1306_write_string("kroll: ");
-ssd1306_write_u16(kroll);
+    PORTB_DIRSET = PIN2_bm;
+    if (!ssd1306_begin()) while (1) { }
 
-// Signed integer
-ssd1306_set_cursor(0,2);
-ssd1306_write_string("ALT: ");
-ssd1306_write_s16(-57);
+    // --- Static UI once (no display() needed in streamed mode)
+    ssd1306_clear();
+    ssd1306_set_cursor(0,0); ssd1306_write_string("Sri Lanka 2025");
+    ssd1306_set_cursor(0,2); ssd1306_write_string("CHAMINDA 9477");
+    ssd1306_set_cursor(0,6); ssd1306_write_string("VAL:");
 
-// Hex byte
-ssd1306_set_cursor(0,3);
-ssd1306_write_string("ID: 0x");
-ssd1306_write_hex8(0xA5);
+    // --- Moving bar on page 4 (no flicker)
+    uint8_t col = 0, prev = SSD1306_WIDTH - 1;
 
-// Fixed-point (x100 -> 2 decimals)
-ssd1306_set_cursor(0,6);
-ssd1306_write_string("TEMP: ");
-ssd1306_write_fixed2(2325);  // prints 23.25
+    // changing value
+    int val = 0;
+    int k = 0;
 
-
-#if SSD1306_BUFFERED
-    ssd1306_display();    // flush when buffered
-#endif
-
-    // --- Moving bar on page 4 (streamed-friendly) ---
-    uint8_t col  = 0;
-    uint8_t prev = SSD1306_WIDTH - 1;
-
-#if !SSD1306_BUFFERED
-    // Clear page 4 once so the bar starts clean
-    ssd1306_goto(0, 4);
-    uint8_t zero = 0x00;
-    for (uint8_t i = 0; i < SSD1306_WIDTH; i++) ssd1306_hal_write_data(&zero, 1);
-
-    uint8_t off = 0x00;   // blank column
-    uint8_t on  = 0xFF;   // solid vertical column (8 pixels high)
-#endif
-
-    for (;;) {
-#if SSD1306_BUFFERED
-        // erase previous bar
-        for (uint8_t r = 0; r < 8; r++) {
-            ssd1306_draw_pixel(prev, 4*8 + r, false);
-        }
-        // draw new bar
-        for (uint8_t r = 0; r < 8; r++) {
-            ssd1306_draw_pixel(col, 4*8 + r, true);
-        }
-        ssd1306_display();
-#else
-        // move to previous column in page 4 and erase it
-        ssd1306_goto(prev, 4);
-        ssd1306_hal_write_data(&off, 1);
-
-        // move to new column in page 4 and draw it
-        ssd1306_goto(col, 4);
-        ssd1306_hal_write_data(&on, 1);
-#endif
+    for (;;)
+    {    /*
+        // 1) update the moving bar (only 2 columns)
+        ssd1306_write_column(4, prev, 0x00);      // erase previous column
+        ssd1306_write_column(4, col,  0xFF);      // draw new column
         prev = col;
-        col  = (col + 1) % SSD1306_WIDTH;
-        _delay_ms(15);
+        col  = (uint8_t)((col + 1) % SSD1306_WIDTH);*/
+
+        // 2) update the changing value (erase + print small area only)
+        ssd1306_set_cursor(30, 6);                 // fixed spot for the number
+        ssd1306_write_string("     ");             // clear old value (5 spaces)
+        ssd1306_set_cursor(30, 6);
+        ssd1306_write_int(val); // or use snprintf ? ssd1306_write_string(buf)
+        
+        
+          ssd1306_set_cursor(50, 4);                 // fixed spot for the number
+        ssd1306_write_string("     ");             // clear old value (5 spaces)
+        ssd1306_set_cursor(50, 4);
+        ssd1306_write_string("count");
+        
+        
+         ssd1306_set_cursor(50, 5);                 // fixed spot for the number
+        ssd1306_write_string("     ");             // clear old value (5 spaces)
+        ssd1306_set_cursor(50, 5);
+        ssd1306_write_int(k);
+        
+        
+        
+        
+        k += 1;
+        if(k > 100) {
+            k = 0;
+        PORTB_OUTTGL = PIN2_bm;
+        }
+        
+
+        val++;
+        if (val > 99999) val = 0;                  // keep it short
+
+       // _delay_ms(1);
     }
 }
+
